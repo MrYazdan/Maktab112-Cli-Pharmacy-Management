@@ -16,3 +16,7 @@ class RouteStateManager:
     @classmethod
     def delete_last_route(cls):
         cls.__routes.pop()
+
+
+class Auth:
+    login_status = False

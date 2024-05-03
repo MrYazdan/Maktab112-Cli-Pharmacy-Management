@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     # Hooks
     Hook(Mode.INITIAL, db.load)
-    Hook(Mode.FINISH, db.save)
+    Hook(Mode.FINISH, lambda: db.save() or atexit.unregister(db.save))
 
     # Lifecycle
     with LifeCycle() as lifecycle:

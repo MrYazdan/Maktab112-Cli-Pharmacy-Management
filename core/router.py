@@ -1,8 +1,6 @@
-from importlib import import_module
-from typing import Callable
-
-from core.state import RouteStateManager
 from core.utils import banner
+from importlib import import_module
+from core.state import RouteStateManager
 
 
 class Callback:
@@ -14,38 +12,38 @@ class Callback:
 
 
 class Route:
-    def __init__(self, name: str,
-                 description: str | None = None,
-                 children: list | None = None,
-                 callback: Callable = None,
-                 condition=lambda: True
-                 ) -> None:
+    def __init__(
+            self, name: str,
+            description: str | None = None,
+            children: list | None = None,
+            callback: Callback | None = None,
+            condition=lambda: True
+    ) -> None:
         self.parent = None
+        self.children = None
 
         self.name = name
         self.description = description
         self.callback = callback
         self.condition = condition
 
-        if children:
-            self._set_parent(children)
-            self.children = children
-        else:
-            self.children = None
+        children and self._set_parent(children)
 
     def _set_parent(self, children: list) -> None:
         for child in children:
             child.parent = self
 
+        self.children = children
+
     def _get_route(self):
         try:
             banner(RouteStateManager.get_current_route())
-            print(self.description or '', end="\n\n")
+            print(self.description or '')
 
             if children := [child for child in self.children if child.condition()]:
                 for child in children:
-                    print(f"\t{children.index(child) + 1}. {child.name}")
-                print(f"\n\t0. " + ("Exit" if not self.parent else f"Back to {self.parent.name}"))
+                    print(f"\t🔸{children.index(child) + 1}. {child.name}")
+                print(f"\n\t🔹0. " + ("Exit" if not self.parent else f"Back to {self.parent.name}"))
 
                 index = int(input("\n > ")) - 1
                 route = children[index] if index != -1 else self.parent
@@ -53,7 +51,7 @@ class Route:
                 if not route:
                     banner("Exit")
 
-                    if input("Do you want to exit ? [y|N] ").strip().lower()[0] == "y":
+                    if (cmd := input("Do you want to exit ? [y|N] ").strip().lower()) and cmd[0] == "y":
                         exit()
                     else:
                         self()
@@ -61,7 +59,7 @@ class Route:
             else:
                 return self
         except (ValueError, KeyboardInterrupt, IndexError):
-            banner("Error")
+            banner(" Error ❗ ")
             input("Please enter valid item\n\nPress enter to continue ...")
             self()
 
@@ -70,22 +68,17 @@ class Route:
 
         route = self._get_route()
 
-        print(route)
         if self.parent == route:
             RouteStateManager.delete_last_route()
-            route()
+            self.parent()
 
         elif route.children:
             route()
 
         else:
-            try:
-                banner(route.name)
-                route.description and print(route.description, end="\n\n")
-                route.callback and route.callback(route)
-            except Exception as e:
-                banner("Error")
-                print(e)
+            banner(" ⚜️ " + route.name + " ⚜️ ")
+            route.description and print(route.description)
+            route.callback and route.callback(route)
 
             input("\n\nPress enter to continue ...")
             RouteStateManager.delete_last_route()
@@ -95,7 +88,6 @@ class Route:
 class Router:
     def __init__(self, route: Route) -> None:
         self.route = route
-        RouteStateManager.add_route(route.name)
 
     def __call__(self, *args, **kwargs):
         self.route()
